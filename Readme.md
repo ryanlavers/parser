@@ -26,6 +26,7 @@ Let's try build a tokenizer that will divide the input string into two types of 
 
 ```javascript
 const {Tokenizer, accept, emit, state} = require('./tokenizer');
+const { consumeStream } = require('./util');
 
 const tokenizer = Tokenizer()
 	.state('text')
@@ -37,7 +38,8 @@ const tokenizer = Tokenizer()
 		.else(accept())
 	.build();
 
-console.log(tokenizer.tokenize("The quick [green]brown fox jumps[blue] over the [red]lazy dog"));
+const input = "The quick [green]brown fox jumps[blue] over the [red]lazy dog";
+consumeStream(tokenizer.process(input), console.log);
 ```
 The first state we define is named "text" because this is the one we'll be in when we're reading characters that are part of the literal text of the input string. The first state defined is also the state that the Tokenizer starts out in at the beginning of the string. The first rule in the "text" state matches an open square bracket which indicates the start of a color tag and instructs the Tokenizer to emit whatever's currently in the buffer as a "text" token, and then switch to the "color" state. *[Note: the first parameter in an `.on()` rule is the character to match, and the remaining parameters are the actions to take, in order.]* The `.onEnd()` rule triggers if we're in the "text" state when the end of the input is reached, and in this case we use it to emit any remaining characters in our buffer as a "text" token. Finally, the `.else()` rule matches when none of the other rules did. That means the character is just regular text, so we accept it into the buffer.
 
@@ -69,6 +71,7 @@ Here is the improved tokenizer:
 
 ```javascript
 const {Tokenizer, accept, emit, state, error} = require('./tokenizer');
+const { consumeStream } = require('./util');
 
 const tokenizer = Tokenizer()
 	.state('text')
@@ -84,6 +87,9 @@ const tokenizer = Tokenizer()
 		.onEnd(error("Unclosed color tag"))
 		.else(accept())
 	.build();
+
+const input = "The quick [green]brown fox jumps[blue] over the [red]lazy dog";
+consumeStream(tokenizer.process(input), console.log);
 ```
 
 ## Next Steps
